@@ -3,16 +3,21 @@ package gameloop;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JPanel;
 
-public class GamePanel extends JPanel implements Runnable {
+import player.Player;
+import player.Player.Movement;
+
+public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final int HEIGHT = 400;
-	private static final int WIDTH = 400;
+	public static final int HEIGHT = 400;
+	public static final int WIDTH = 400;
 
 	private Thread gameThread;
 
@@ -21,6 +26,8 @@ public class GamePanel extends JPanel implements Runnable {
 	private BufferedImage image;
 
 	private boolean running;
+
+	private Player player;
 
 	private int FPS = 30;
 	private double averageFPS;
@@ -41,6 +48,7 @@ public class GamePanel extends JPanel implements Runnable {
 			this.gameThread = new Thread(this);
 		}
 		this.gameThread.start();
+		this.addKeyListener(this);
 	}
 
 	@Override
@@ -59,6 +67,8 @@ public class GamePanel extends JPanel implements Runnable {
 		int frameCount = 0;
 		int maxFrameCount = 30;
 		long targetTime = 1000 / this.FPS;
+
+		this.player = new Player();
 
 		// GAME LOOP
 		while (this.running) {
@@ -90,7 +100,7 @@ public class GamePanel extends JPanel implements Runnable {
 	}
 
 	private void gameUpdate() {
-
+		this.player.update();
 	}
 
 	private void gameRender() {
@@ -99,11 +109,56 @@ public class GamePanel extends JPanel implements Runnable {
 		this.graphics.setColor(Color.black);
 		this.graphics.drawRect(100, 50, 100, 100);
 		this.graphics.drawString("FPS: " + this.averageFPS, 10, 10);
+
+		this.player.draw(this.graphics);
 	}
 
 	private void gameDraw() {
 		this.getGraphics().drawImage(this.image, 0, 0, null);
 		this.getGraphics().dispose();
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		switch (e.getKeyCode()) {
+		case KeyEvent.VK_LEFT:
+			this.player.move(Movement.LEFT, true);
+			;
+			break;
+		case KeyEvent.VK_RIGHT:
+			this.player.move(Movement.RIGHT, true);
+			break;
+		case KeyEvent.VK_DOWN:
+			this.player.move(Movement.DOWN, true);
+			break;
+		case KeyEvent.VK_UP:
+			this.player.move(Movement.UP, true);
+			break;
+		default:
+		}
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
+		switch (e.getKeyCode()) {
+		case KeyEvent.VK_LEFT:
+			this.player.move(Movement.LEFT, false);
+			break;
+		case KeyEvent.VK_RIGHT:
+			this.player.move(Movement.RIGHT, false);
+			break;
+		case KeyEvent.VK_DOWN:
+			this.player.move(Movement.DOWN, false);
+			break;
+		case KeyEvent.VK_UP:
+			this.player.move(Movement.UP, false);
+			break;
+		default:
+		}
 	}
 
 }
