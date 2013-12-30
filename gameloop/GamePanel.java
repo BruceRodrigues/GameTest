@@ -197,6 +197,26 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 				i--;
 			}
 		}
+
+		// player collision
+		if (!this.player.isRecovering()) {
+			int px = this.player.getX();
+			int py = this.player.getY();
+			int pr = this.player.getR();
+			for (Enemy enemy : this.enemies) {
+				double ex = enemy.getX();
+				double ey = enemy.getY();
+				double er = enemy.getR();
+
+				double dx = px - ex;
+				double dy = py - ey;
+				double dist = Math.sqrt(dx * dx + dy * dy);
+
+				if (dist < pr + er) {
+					this.player.hit();
+				}
+			}
+		}
 	}
 
 	// Create a wave of enemies

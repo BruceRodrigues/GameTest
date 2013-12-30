@@ -25,6 +25,9 @@ public class Player {
 
 	private boolean left, right, up, down;
 
+	private boolean recovering;
+	private long recoveryTimer;
+
 	public Player() {
 		this.x = GamePanel.WIDTH / 2;
 		this.y = GamePanel.HEIGHT / 2;
@@ -37,10 +40,14 @@ public class Player {
 		this.lives = 3;
 
 		this.color1 = Color.BLACK;
+		this.color2 = Color.red;
 
 		this.firing = false;
 		this.firingTimer = System.nanoTime();
 		this.firingDelay = 200;
+
+		this.recovering = false;
+		this.recoveryTimer = 0;
 	}
 
 	public void update() {
@@ -85,6 +92,12 @@ public class Player {
 				this.firingTimer = System.nanoTime();
 			}
 		}
+
+		long elapsed = (System.nanoTime() - this.recoveryTimer) / 1000000;
+		if (elapsed > 2000) {
+			this.recovering = false;
+			this.recoveryTimer = 0;
+		}
 	}
 
 	public void move(Movement m, boolean value) {
@@ -110,7 +123,11 @@ public class Player {
 	}
 
 	public void draw(Graphics2D graphics) {
-		graphics.setColor(this.color1);
+		if (this.recovering) {
+			graphics.setColor(this.color2);
+		} else {
+			graphics.setColor(this.color1);
+		}
 		graphics.fillOval(this.x - this.r, this.y - this.r, 2 * this.r,
 				2 * this.r);
 		graphics.setStroke(new BasicStroke(3));
@@ -132,5 +149,15 @@ public class Player {
 
 	public int getLives() {
 		return this.lives;
+	}
+
+	public boolean isRecovering() {
+		return this.recovering;
+	}
+
+	public void hit() {
+		this.lives--;
+		this.recovering = true;
+		this.recoveryTimer = System.nanoTime();
 	}
 }
