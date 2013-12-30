@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import player.Bullet;
 import player.Player;
 import player.Player.Movement;
+import enemy.Enemy;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener {
 
@@ -32,6 +33,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 	public static Player player;
 	public static List<Bullet> bullets;
+	public static List<Enemy> enemies;
 
 	private int FPS = 30;
 	private double averageFPS;
@@ -74,6 +76,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 		this.player = new Player();
 		this.bullets = new ArrayList<Bullet>();
+		this.enemies = new ArrayList<Enemy>();
+		for (int i = 0; i < 5; i++) {
+			this.enemies.add(new Enemy(1, 1));
+		}
 
 		// GAME LOOP
 		while (this.running) {
@@ -112,6 +118,41 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 				i--;
 			}
 		}
+		for (Enemy enemy : this.enemies) {
+			enemy.update();
+		}
+
+		for (int i = 0; i < bullets.size(); i++) {
+			Bullet bullet = bullets.get(i);
+			double bx = bullet.getX();
+			double by = bullet.getY();
+			double br = bullet.getR();
+
+			for (int j = 0; j < enemies.size(); j++) {
+				Enemy enemy = enemies.get(j);
+				double ex = enemy.getX();
+				double ey = enemy.getY();
+				double er = enemy.getR();
+
+				double dx = bx - ex;
+				double dy = by - ey;
+				double dist = Math.sqrt(dx * dx + dy * dy);
+
+				if (dist < br + er) {
+					enemy.hit();
+					bullets.remove(i);
+					i--;
+					break;
+				}
+			}
+		}
+
+		for (int i = 0; i < enemies.size(); i++) {
+			if (enemies.get(i).isDead()) {
+				this.enemies.remove(i);
+				i--;
+			}
+		}
 	}
 
 	private void gameRender() {
@@ -125,6 +166,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		this.player.draw(this.graphics);
 		for (int i = 0; i < this.bullets.size(); i++) {
 			this.bullets.get(i).draw(this.graphics);
+		}
+		for (Enemy enemy : this.enemies) {
+			enemy.draw(this.graphics);
 		}
 	}
 
