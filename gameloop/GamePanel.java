@@ -2,7 +2,9 @@ package gameloop;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
@@ -35,8 +37,16 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 	public static List<Bullet> bullets;
 	public static List<Enemy> enemies;
 
+	private long waveStartTimer;
+	private long waveStartTimerDiff;
+	private int waveNumber;
+	private boolean waveStart;
+	private int waveDelay = 5000;
+
 	private int FPS = 30;
 	private double averageFPS;
+
+	private Font infoFont;
 
 	public GamePanel() {
 		super();
@@ -63,6 +73,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		this.image = new BufferedImage(WIDTH, HEIGHT,
 				BufferedImage.TYPE_INT_RGB);
 		this.graphics = (Graphics2D) this.image.getGraphics();
+		this.graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+				RenderingHints.VALUE_ANTIALIAS_ON);
+		this.graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+				RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		this.infoFont = this.graphics.getFont();
 
 		// FPS Control
 		long startTime;
@@ -77,9 +92,11 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		this.player = new Player();
 		this.bullets = new ArrayList<Bullet>();
 		this.enemies = new ArrayList<Enemy>();
-		for (int i = 0; i < 5; i++) {
-			this.enemies.add(new Enemy(1, 1));
-		}
+
+		this.waveStartTimer = 0;
+		this.waveStartTimerDiff = 0;
+		this.waveNumber = 0;
+		this.waveStart = true;
 
 		// GAME LOOP
 		while (this.running) {
@@ -111,17 +128,43 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 	}
 
 	private void gameUpdate() {
+
+		// enemies wave
+		if (this.waveStartTimer == 0 && enemies.size() == 0) {
+			this.waveNumber++;
+			this.waveStart = false;
+			this.waveStartTimer = System.nanoTime();
+		} else {
+			this.waveStartTimerDiff = (System.nanoTime() - this.waveStartTimer) / 1000000;
+			if (this.waveStartTimerDiff > this.waveDelay) {
+				this.waveStart = true;
+				this.waveStartTimer = 0;
+				this.waveStartTimerDiff = 0;
+			}
+		}
+
+		// create new enemies
+		if (this.waveStart && enemies.size() == 0) {
+			createNewEnemies();
+		}
+
+		// update player state
 		this.player.update();
+
+		// update bullets
 		for (int i = 0; i < this.bullets.size(); i++) {
 			if (this.bullets.get(i).update()) {
 				this.bullets.remove(i);
 				i--;
 			}
 		}
+
+		// update enemies
 		for (Enemy enemy : this.enemies) {
 			enemy.update();
 		}
 
+		// Collision test
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet bullet = bullets.get(i);
 			double bx = bullet.getX();
@@ -147,6 +190,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 			}
 		}
 
+		// Test if enemy is dead
 		for (int i = 0; i < enemies.size(); i++) {
 			if (enemies.get(i).isDead()) {
 				this.enemies.remove(i);
@@ -155,20 +199,48 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		}
 	}
 
+	// Create a wave of enemies
+	private void createNewEnemies() {
+		enemies.clear();
+		for (int i = 0; i < this.waveNumber * 3; i++) {
+			enemies.add(new Enemy(1, 1));
+		}
+	}
+
 	private void gameRender() {
-		this.graphics.setColor(Color.LIGHT_GRAY);
+		// Background and info
+		this.graphics.setFont(this.infoFont);
+		this.graphics.setColor(new Color(0, 100, 255));
 		this.graphics.fillRect(0, 0, WIDTH, HEIGHT);
 		this.graphics.setColor(Color.black);
-		this.graphics.drawRect(100, 50, 100, 100);
 		this.graphics.drawString("FPS: " + this.averageFPS, 10, 10);
 		this.graphics.drawString("Bullets: " + this.bullets.size(), 10, 20);
 
+		// render player
 		this.player.draw(this.graphics);
+
+		// render bullets
 		for (int i = 0; i < this.bullets.size(); i++) {
 			this.bullets.get(i).draw(this.graphics);
 		}
+
+		// render enemies
 		for (Enemy enemy : this.enemies) {
 			enemy.draw(this.graphics);
+		}
+
+		if (this.waveStartTimer != 0) {
+			this.graphics.setFont(new Font("Century Gothic", Font.PLAIN, 18));
+			String s = "- W A V E  " + this.waveNumber + "  -";
+			int length = (int) this.graphics.getFontMetrics()
+					.getStringBounds(s, this.graphics).getWidth();
+			int alpha = (int) (255 * Math.sin(3.14 * this.waveStartTimerDiff
+					/ this.waveDelay));
+			if (alpha > 255) {
+				alpha = 255;
+			}
+			this.graphics.setColor(new Color(255, 255, 255, alpha));
+			this.graphics.drawString(s, WIDTH / 2 - length / 2, HEIGHT / 2);
 		}
 	}
 

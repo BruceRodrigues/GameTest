@@ -117,4 +117,20 @@ public class Player {
 		graphics.setColor(this.color1.brighter());
 		graphics.setStroke(new BasicStroke(1));
 	}
+
+	public int getX() {
+		return this.x;
+	}
+
+	public int getY() {
+		return this.y;
+	}
+
+	public int getR() {
+		return this.r;
+	}
+
+	public int getLives() {
+		return this.lives;
+	}
 }
