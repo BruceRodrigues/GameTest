@@ -1,24 +1,21 @@
 package player;
 
 import gameloop.GamePanel;
+import image.Sprite;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Graphics2D;
 
-public class Player {
+import collision.Obj;
+
+public class Player extends Obj {
 
 	public enum Movement {
 		LEFT, RIGHT, DOWN, UP
 	}
 
-	private int x, y, r;
-
 	private int dx, dy, speed;
 
 	private int lives;
-
-	private Color color1, color2;
 
 	private boolean firing;
 	private long firingTimer, firingDelay;
@@ -28,19 +25,23 @@ public class Player {
 	private boolean recovering;
 	private long recoveryTimer;
 
+	private int power;
+	private int powerLevel;
+	private int[] requiredPower = { 1, 2, 3, 4, 5 };
+
+	private Sprite image;
+	private Sprite recoveringImage;
+
 	public Player() {
-		this.x = GamePanel.WIDTH / 2;
-		this.y = GamePanel.HEIGHT / 2;
-		this.r = 5;
+		super(GamePanel.WIDTH / 2, GamePanel.HEIGHT / 2, 10, 10);
+		this.image = new Sprite("/hero/pkmnFRHero.png");
+		this.recoveringImage = new Sprite("/hero/recHero.png");
 
 		this.dx = 0;
 		this.dy = 0;
 		this.speed = 5;
 
 		this.lives = 3;
-
-		this.color1 = Color.BLACK;
-		this.color2 = Color.red;
 
 		this.firing = false;
 		this.firingTimer = System.nanoTime();
@@ -68,16 +69,16 @@ public class Player {
 		this.y += this.dy;
 
 		// border control
-		if (this.x < this.r) {
-			this.x = this.r;
+		if (this.x < this.width) {
+			this.x = this.width;
 		}
-		if (this.y < this.r) {
-			this.y = this.r;
+		if (this.y < this.height) {
+			this.y = this.height;
 		}
-		if (this.x > GamePanel.WIDTH - this.r) {
+		if (this.x > GamePanel.WIDTH) {
 			this.x = GamePanel.WIDTH;
 		}
-		if (this.y > GamePanel.HEIGHT - this.r) {
+		if (this.y > GamePanel.HEIGHT) {
 			this.y = GamePanel.HEIGHT;
 		}
 		//
@@ -88,8 +89,20 @@ public class Player {
 		if (this.firing) {
 			long elapsed = (System.nanoTime() - this.firingTimer) / 1000000;
 			if (elapsed > this.firingDelay) {
-				GamePanel.bullets.add(new Bullet(270, this.x, this.y));
 				this.firingTimer = System.nanoTime();
+
+				if (this.powerLevel == 0) {
+					GamePanel.bullets.add(new Bullet(270, this.x + this.width
+							/ 2, this.y));
+				} else if (this.powerLevel < 3) {
+					GamePanel.bullets.add(new Bullet(270, this.x + 5, this.y));
+					GamePanel.bullets.add(new Bullet(270, this.x - 5, this.y));
+				} else {
+					GamePanel.bullets.add(new Bullet(270, this.x + 14, this.y));
+					GamePanel.bullets.add(new Bullet(270, this.x + 7, this.y));
+					GamePanel.bullets.add(new Bullet(270, this.x, this.y));
+					GamePanel.bullets.add(new Bullet(270, this.x - 7, this.y));
+				}
 			}
 		}
 
@@ -124,27 +137,10 @@ public class Player {
 
 	public void draw(Graphics2D graphics) {
 		if (this.recovering) {
-			graphics.setColor(this.color2);
+			this.recoveringImage.draw(graphics, (int) this.x, (int) this.y);
 		} else {
-			graphics.setColor(this.color1);
+			this.image.draw(graphics, (int) this.x, (int) this.y);
 		}
-		graphics.fillOval(this.x - this.r, this.y - this.r, 2 * this.r,
-				2 * this.r);
-		graphics.setStroke(new BasicStroke(3));
-		graphics.setColor(this.color1.brighter());
-		graphics.setStroke(new BasicStroke(1));
-	}
-
-	public int getX() {
-		return this.x;
-	}
-
-	public int getY() {
-		return this.y;
-	}
-
-	public int getR() {
-		return this.r;
 	}
 
 	public int getLives() {
@@ -159,5 +155,29 @@ public class Player {
 		this.lives--;
 		this.recovering = true;
 		this.recoveryTimer = System.nanoTime();
+		this.speed = 5;
+		this.power = 0;
+		this.powerLevel = 0;
+
+	}
+
+	public void increasePower(int i) {
+		this.power += i;
+		if (this.power >= this.requiredPower[this.powerLevel]) {
+			this.power -= this.requiredPower[this.powerLevel];
+			this.powerLevel++;
+		}
+	}
+
+	public int getPowerLevel() {
+		return this.powerLevel;
+	}
+
+	public int getRequiredPower() {
+		return this.requiredPower[this.powerLevel];
+	}
+
+	public void increaseSpeed() {
+		this.speed += 2;
 	}
 }

@@ -16,6 +16,8 @@ import javax.swing.JPanel;
 import player.Bullet;
 import player.Player;
 import player.Player.Movement;
+import player.PowerUp;
+import collision.Detector;
 import enemy.Enemy;
 
 public class GamePanel extends JPanel implements Runnable, KeyListener {
@@ -36,6 +38,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 	public static Player player;
 	public static List<Bullet> bullets;
 	public static List<Enemy> enemies;
+	public static List<PowerUp> powerUps;
 
 	private long waveStartTimer;
 	private long waveStartTimerDiff;
@@ -92,6 +95,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		this.player = new Player();
 		this.bullets = new ArrayList<Bullet>();
 		this.enemies = new ArrayList<Enemy>();
+		this.powerUps = new ArrayList<PowerUp>();
 
 		this.waveStartTimer = 0;
 		this.waveStartTimerDiff = 0;
@@ -151,6 +155,13 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		// update player state
 		this.player.update();
 
+		for (int i = 0; i < this.powerUps.size(); i++) {
+			if (!this.powerUps.get(i).update()) {
+				this.powerUps.remove(i);
+				i--;
+			}
+		}
+
 		// update bullets
 		for (int i = 0; i < this.bullets.size(); i++) {
 			if (this.bullets.get(i).update()) {
@@ -164,24 +175,14 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 			enemy.update();
 		}
 
-		// Collision test
+		// Enemy-bullet Collision test
 		for (int i = 0; i < bullets.size(); i++) {
 			Bullet bullet = bullets.get(i);
-			double bx = bullet.getX();
-			double by = bullet.getY();
-			double br = bullet.getR();
 
 			for (int j = 0; j < enemies.size(); j++) {
 				Enemy enemy = enemies.get(j);
-				double ex = enemy.getX();
-				double ey = enemy.getY();
-				double er = enemy.getR();
 
-				double dx = bx - ex;
-				double dy = by - ey;
-				double dist = Math.sqrt(dx * dx + dy * dy);
-
-				if (dist < br + er) {
+				if (Detector.checkCollision(bullet, enemy)) {
 					enemy.hit();
 					bullets.remove(i);
 					i--;
@@ -193,6 +194,17 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		// Test if enemy is dead
 		for (int i = 0; i < enemies.size(); i++) {
 			if (enemies.get(i).isDead()) {
+
+				// check powerup drop
+				double rand = Math.random();
+				if (rand < 0.1) {
+					powerUps.add(new PowerUp(1, enemies.get(i).getX(), enemies
+							.get(i).getY()));
+				} else if (rand < 0.2) {
+					powerUps.add(new PowerUp(2, enemies.get(i).getX(), enemies
+							.get(i).getY()));
+				}
+
 				this.enemies.remove(i);
 				i--;
 			}
@@ -200,23 +212,29 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 		// player collision
 		if (!this.player.isRecovering()) {
-			int px = this.player.getX();
-			int py = this.player.getY();
-			int pr = this.player.getR();
 			for (Enemy enemy : this.enemies) {
-				double ex = enemy.getX();
-				double ey = enemy.getY();
-				double er = enemy.getR();
 
-				double dx = px - ex;
-				double dy = py - ey;
-				double dist = Math.sqrt(dx * dx + dy * dy);
-
-				if (dist < pr + er) {
+				if (Detector.checkCollision(this.player, enemy)) {
 					this.player.hit();
 				}
 			}
 		}
+
+		// PowerUp-player collision test
+		for (int i = 0; i < this.powerUps.size(); i++) {
+			PowerUp p = this.powerUps.get(i);
+
+			if (Detector.checkCollision(this.player, p)) {
+				if (p.getType() == 1) {
+					this.player.increaseSpeed();
+				} else if (p.getType() == 2) {
+					this.player.increasePower(1);
+				}
+				this.powerUps.remove(i);
+				i--;
+			}
+		}
+
 	}
 
 	// Create a wave of enemies
@@ -230,7 +248,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 	private void gameRender() {
 		// Background and info
 		this.graphics.setFont(this.infoFont);
-		this.graphics.setColor(new Color(0, 100, 255));
+		this.graphics.setColor(new Color(17, 219, 255));
 		this.graphics.fillRect(0, 0, WIDTH, HEIGHT);
 		this.graphics.setColor(Color.black);
 		this.graphics.drawString("FPS: " + this.averageFPS, 10, 10);
@@ -247,6 +265,10 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		// render enemies
 		for (Enemy enemy : this.enemies) {
 			enemy.draw(this.graphics);
+		}
+
+		for (PowerUp p : this.powerUps) {
+			p.draw(this.graphics);
 		}
 
 		if (this.waveStartTimer != 0) {
