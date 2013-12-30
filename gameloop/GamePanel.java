@@ -6,9 +6,12 @@ import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 
+import player.Bullet;
 import player.Player;
 import player.Player.Movement;
 
@@ -27,7 +30,8 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 	private boolean running;
 
-	private Player player;
+	public static Player player;
+	public static List<Bullet> bullets;
 
 	private int FPS = 30;
 	private double averageFPS;
@@ -69,6 +73,7 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		long targetTime = 1000 / this.FPS;
 
 		this.player = new Player();
+		this.bullets = new ArrayList<Bullet>();
 
 		// GAME LOOP
 		while (this.running) {
@@ -101,16 +106,26 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 
 	private void gameUpdate() {
 		this.player.update();
+		for (int i = 0; i < this.bullets.size(); i++) {
+			if (this.bullets.get(i).update()) {
+				this.bullets.remove(i);
+				i--;
+			}
+		}
 	}
 
 	private void gameRender() {
-		this.graphics.setColor(Color.white);
+		this.graphics.setColor(Color.LIGHT_GRAY);
 		this.graphics.fillRect(0, 0, WIDTH, HEIGHT);
 		this.graphics.setColor(Color.black);
 		this.graphics.drawRect(100, 50, 100, 100);
 		this.graphics.drawString("FPS: " + this.averageFPS, 10, 10);
+		this.graphics.drawString("Bullets: " + this.bullets.size(), 10, 20);
 
 		this.player.draw(this.graphics);
+		for (int i = 0; i < this.bullets.size(); i++) {
+			this.bullets.get(i).draw(this.graphics);
+		}
 	}
 
 	private void gameDraw() {
@@ -138,6 +153,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 		case KeyEvent.VK_UP:
 			this.player.move(Movement.UP, true);
 			break;
+		case KeyEvent.VK_SPACE:
+			this.player.setFiring(true);
+			break;
 		default:
 		}
 	}
@@ -156,6 +174,9 @@ public class GamePanel extends JPanel implements Runnable, KeyListener {
 			break;
 		case KeyEvent.VK_UP:
 			this.player.move(Movement.UP, false);
+			break;
+		case KeyEvent.VK_SPACE:
+			this.player.setFiring(false);
 			break;
 		default:
 		}

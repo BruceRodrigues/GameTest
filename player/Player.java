@@ -20,6 +20,9 @@ public class Player {
 
 	private Color color1, color2;
 
+	private boolean firing;
+	private long firingTimer, firingDelay;
+
 	private boolean left, right, up, down;
 
 	public Player() {
@@ -34,6 +37,10 @@ public class Player {
 		this.lives = 3;
 
 		this.color1 = Color.BLACK;
+
+		this.firing = false;
+		this.firingTimer = System.nanoTime();
+		this.firingDelay = 200;
 	}
 
 	public void update() {
@@ -53,6 +60,7 @@ public class Player {
 		this.x += this.dx;
 		this.y += this.dy;
 
+		// border control
 		if (this.x < this.r) {
 			this.x = this.r;
 		}
@@ -65,9 +73,18 @@ public class Player {
 		if (this.y > GamePanel.HEIGHT - this.r) {
 			this.y = GamePanel.HEIGHT;
 		}
+		//
 
 		this.dx = 0;
 		this.dy = 0;
+
+		if (this.firing) {
+			long elapsed = (System.nanoTime() - this.firingTimer) / 1000000;
+			if (elapsed > this.firingDelay) {
+				GamePanel.bullets.add(new Bullet(270, this.x, this.y));
+				this.firingTimer = System.nanoTime();
+			}
+		}
 	}
 
 	public void move(Movement m, boolean value) {
@@ -88,12 +105,16 @@ public class Player {
 		}
 	}
 
+	public void setFiring(boolean value) {
+		this.firing = value;
+	}
+
 	public void draw(Graphics2D graphics) {
 		graphics.setColor(this.color1);
 		graphics.fillOval(this.x - this.r, this.y - this.r, 2 * this.r,
 				2 * this.r);
 		graphics.setStroke(new BasicStroke(3));
-		graphics.setColor(this.color1.darker());
+		graphics.setColor(this.color1.brighter());
 		graphics.setStroke(new BasicStroke(1));
 	}
 }
